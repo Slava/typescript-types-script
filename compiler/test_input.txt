@@ -7,3 +7,4 @@ f a b =
 
 f2 a = c
 f3 a = (d e f)
+f4 = #symbol

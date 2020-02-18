@@ -117,9 +117,39 @@ function = do
 functions :: Parser [Function]
 functions = many function <* eof
 
+translateArgs :: [Text] -> Text
+translateArgs [] = ""
+translateArgs args = T.concat ["<", T.intercalate ", " args, ">"]
+
+translateTerm :: Term -> Text
+translateTerm (Reference ref) = ref
+translateTerm (Symbol sym) = T.concat ["\"", sym, "\""]
+translateTerm (List xs) = T.concat ["[", T.intercalate ", " (map translateTerm xs), "]"]
+translateTerm (Expression call args) =
+  T.concat [ translateTerm call
+           , "<"
+           , T.intercalate ", " $ map translateTerm args
+           , ">"
+           ]
+
+translateFuncBody :: [Branch] -> Text
+translateFuncBody [] = ""
+translateFuncBody ((Branch Nothing t):[]) = translateTerm t
+translateFuncBody bs = ""
+
+translateFunction :: Function -> Text
+translateFunction fn =
+  T.concat [ "type "
+           , funcName fn
+           , translateArgs $ funcArgs fn
+           , " = "
+           , translateFuncBody $ funcBody fn
+           , "\n"
+           ]
+
 translate :: [Function] -> Text
 translate fns =
-  ""
+  T.concat $ map translateFunction fns
 
 parse :: Text -> IO ()
 parse input =
