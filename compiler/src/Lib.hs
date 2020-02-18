@@ -14,12 +14,16 @@ type Parser = Parsec Void Text
 
 data Function = Function { funcName :: Text
                          , funcArgs :: [Text]
-                         , funcBody :: Term -- different in pattern-matching
+                         , funcBody :: [Branch]
                          } deriving (Show)
 
 data Term = Expression { callFunc :: Term
                        , callArgs :: [Term]
                        } | Reference Text deriving (Show)
+
+data Branch = Branch { branchCond :: Maybe Term
+                     , branchBody :: Term
+                     } deriving (Show)
 
 sc :: Parser ()
 sc = L.space
@@ -54,12 +58,36 @@ expression = do
   args <- many term
   return $ Expression func args
 
+termAsBranch :: Parser [Branch]
+termAsBranch = do
+  body <- term
+  return [Branch Nothing body]
+
+otherwiseNothing :: Parser (Maybe Term)
+otherwiseNothing = do
+  void (symbol "otherwise")
+  return Nothing
+
+justTerm :: Parser (Maybe Term)
+justTerm = Just <$> term
+
+branch :: Parser Branch
+branch = do
+  void (symbol "|")
+  br <- otherwiseNothing <|> justTerm
+  void (symbol "->")
+  body <- term
+  return $ Branch br body
+
+branches :: Parser [Branch]
+branches = some branch
+
 function :: Parser Function
 function = do
   name <- reference
   args <- arguments
   void (symbol "=")
-  body <- term
+  body <- branches <|> termAsBranch
   return $ Function name args body
 
 

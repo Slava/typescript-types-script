@@ -1,0 +1,7 @@
+f a b =
+| a -> b
+| (special a) -> b
+| otherwise -> x
+
+f2 a = c
+f3 a = (d e f)
