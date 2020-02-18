@@ -5,7 +5,7 @@ import Control.Monad
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Void
-import Text.Megaparsec(Parsec, between, choice, parseTest, eof)
+import Text.Megaparsec(Parsec, between, choice, parseTest, eof, sepBy)
 import Text.Megaparsec.Char(alphaNumChar, string, space1)
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -22,6 +22,7 @@ data Term = Expression { callFunc :: Term
                        }
           | Reference Text
           | Symbol Text
+          | List [Term]
           deriving (Show)
 
 data Branch = Branch { branchCond :: Maybe Term
@@ -54,6 +55,11 @@ literalSymbol = do
   void "#"
   lexeme $ Symbol <$> token
 
+literalList :: Parser Term
+literalList = do
+  terms <- between (symbol "[") (symbol "]") (term `sepBy` (symbol ","))
+  return $ List terms
+
 arguments :: Parser [Text]
 arguments = many lexToken
 
@@ -62,6 +68,7 @@ term = choice
   [ parentesizedExpression
   , reference
   , literalSymbol
+  , literalList
   ]
 
 parentesizedExpression :: Parser Term

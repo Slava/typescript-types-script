@@ -1,3 +1,5 @@
+list = [x, #y, (as d f)]
+
 f a b =
 | a -> #b
 | (special a) -> b
