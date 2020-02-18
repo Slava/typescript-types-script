@@ -4,9 +4,10 @@ import Control.Applicative
 import Control.Monad
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.IO (putStrLn)
 import Data.Void
-import Text.Megaparsec(Parsec, between, choice, parseTest, eof, sepBy)
-import Text.Megaparsec.Char(alphaNumChar, string, space1)
+import Text.Megaparsec(Parsec, between, choice, eof, sepBy, runParser, errorBundlePretty)
+import Text.Megaparsec.Char(alphaNumChar, space1)
 import qualified Text.Megaparsec.Char.Lexer as L
 
 
@@ -57,7 +58,7 @@ literalSymbol = do
 
 literalList :: Parser Term
 literalList = do
-  terms <- between (symbol "[") (symbol "]") (term `sepBy` (symbol ","))
+  terms <- between (symbol "[") (symbol "]") (term `sepBy` symbol ",")
   return $ List terms
 
 arguments :: Parser [Text]
@@ -116,5 +117,13 @@ function = do
 functions :: Parser [Function]
 functions = many function <* eof
 
+translate :: [Function] -> Text
+translate fns =
+  ""
+
 parse :: Text -> IO ()
-parse = parseTest functions
+parse input =
+  let parsed = runParser functions "input" input in
+    case parsed of
+      Right fns -> Data.Text.IO.putStrLn $ translate fns
+      Left errorsBundle -> Prelude.putStrLn $ errorBundlePretty errorsBundle
