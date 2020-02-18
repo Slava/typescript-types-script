@@ -1,5 +1,5 @@
 f a b =
-| a -> b
+| a -> #b
 | (special a) -> b
 | otherwise -> x
 

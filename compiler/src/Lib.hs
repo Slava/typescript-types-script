@@ -19,7 +19,10 @@ data Function = Function { funcName :: Text
 
 data Term = Expression { callFunc :: Term
                        , callArgs :: [Term]
-                       } | Reference Text deriving (Show)
+                       }
+          | Reference Text
+          | Symbol Text
+          deriving (Show)
 
 data Branch = Branch { branchCond :: Maybe Term
                      , branchBody :: Term
@@ -37,16 +40,28 @@ symbol = L.symbol sc
 lexeme :: Parser a -> Parser a
 lexeme = L.lexeme sc
 
-reference :: Parser Text
-reference = lexeme $ T.pack <$> some alphaNumChar
+token :: Parser Text
+token = T.pack <$> some alphaNumChar
+
+lexToken :: Parser Text
+lexToken = lexeme token
+
+reference :: Parser Term
+reference = lexeme $ Reference <$> token
+
+literalSymbol :: Parser Term
+literalSymbol = do
+  void "#"
+  lexeme $ Symbol <$> token
 
 arguments :: Parser [Text]
-arguments = many reference
+arguments = many lexToken
 
 term :: Parser Term
 term = choice
   [ parentesizedExpression
-  , reference >>= (return . Reference)
+  , reference
+  , literalSymbol
   ]
 
 parentesizedExpression :: Parser Term
@@ -84,7 +99,7 @@ branches = some branch
 
 function :: Parser Function
 function = do
-  name <- reference
+  name <- lexToken
   args <- arguments
   void (symbol "=")
   body <- branches <|> termAsBranch
