@@ -1,0 +1,33 @@
+
+./Setup.hs,15
+main main1,2
+
+./app/Main.hs,37
+module Main Main0,1
+main main5,6
+
+./test/Spec.hs,15
+main main0,1
+
+./src/Lib.hs,703
+module Lib Lib1,2
+type Parser Parser12,13
+data Function Function14,15
+data Function = Function Function14,15
+data Function = Function { funcName funcName14,15
+                         , funcArgs funcArgs15,16
+                         , funcBody funcBody16,17
+data Term Term19,20
+data Term = Expression Expression19,20
+data Term = Expression { callFunc callFunc19,20
+                       , callArgs callArgs20,21
+                       } | Reference Reference21,22
+symbol symbol23,24
+lexeme lexeme26,27
+reference reference29,30
+arguments arguments32,33
+term term35,36
+expression expression41,42
+function function47,48
+functions functions58,59
+parse parse61,62
