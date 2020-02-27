@@ -1,10 +1,8 @@
-list = [x, #y, (as d f)]
+list = [0, 1, 2, 3, 4, 5]
 
-f a b =
-| a -> #b
-| (special a) -> b
-| otherwise -> x
+find ls[] a =
+| (Eq (Len ls) #0) -> false
+| (Eq (Head ls) a) -> true
+| otherwise -> (find (Tail ls) a)
 
-f2 a = c
-f3 a = (d e f)
-f4 = #symbol
+ans = (find list 4)

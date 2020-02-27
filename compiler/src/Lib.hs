@@ -9,12 +9,13 @@ import Data.Void
 import Text.Megaparsec(Parsec, between, choice, eof, sepBy, runParser, errorBundlePretty)
 import Text.Megaparsec.Char(alphaNumChar, space1)
 import qualified Text.Megaparsec.Char.Lexer as L
+import Data.Char
 
 
 type Parser = Parsec Void Text
 
 data Function = Function { funcName :: Text
-                         , funcArgs :: [Text]
+                         , funcArgs :: [(Text, Bool)] -- is an array arg or not
                          , funcBody :: [Branch]
                          } deriving (Show)
 
@@ -61,8 +62,19 @@ literalList = do
   terms <- between (symbol "[") (symbol "]") (term `sepBy` symbol ",")
   return $ List terms
 
-arguments :: Parser [Text]
-arguments = many lexToken
+arguments :: Parser [(Text, Bool)]
+arguments = many argument
+
+arrSign :: Parser Bool
+arrSign = do
+  void (symbol "[]")
+  return True
+
+argument :: Parser (Text, Bool)
+argument = do
+  token <- lexToken
+  isArray <- arrSign <|> (return False)
+  return $ (token, isArray)
 
 term :: Parser Term
 term = choice
@@ -117,13 +129,17 @@ function = do
 functions :: Parser [Function]
 functions = many function <* eof
 
-translateArgs :: [Text] -> Text
+translateArg :: (Text, Bool) -> Text
+translateArg (t, False) = t
+translateArg (t, True) = T.concat [t, " extends any[]"]
+
+translateArgs :: [(Text, Bool)] -> Text
 translateArgs [] = ""
-translateArgs args = T.concat ["<", T.intercalate ", " args, ">"]
+translateArgs args = T.concat ["<", T.intercalate ", " (map translateArg args), ">"]
 
 translateTerm :: Term -> Text
 translateTerm (Reference ref) = ref
-translateTerm (Symbol sym) = T.concat ["\"", sym, "\""]
+translateTerm (Symbol sym) = if all isDigit (T.unpack sym) then sym else T.concat ["\"", sym, "\""]
 translateTerm (List xs) = T.concat ["[", T.intercalate ", " (map translateTerm xs), "]"]
 translateTerm (Expression call args) =
   T.concat [ translateTerm call
@@ -156,9 +172,21 @@ translateFunction fn =
            , "\n"
            ]
 
+tstsStdLib :: Text
+tstsStdLib =
+  T.concat [ "type Eq<a, b> = a extends b ? b extends a ? true : false : false\n"
+           , "type Not<a> = a extends false ? true : false\n"
+           , "type And<a, b> = a extends true ? b extends true ? true : false : false\n"
+           , "type Or<a, b> = a extends true ? true : b extends true ? true : false\n"
+           , "type Head<L extends any[]> = L[0]\n"
+           , "type Tail<L extends any[]> = ((...all: L) => void) extends ((head: any, ...tail: infer Tail) => void) ? Tail : never\n"
+           , "type Cons<I, L extends any[]> = ((head: I, ...rest: L) => void) extends ((...all: infer NL) => void) ? NL : never\n"
+           , "type Len<L extends any[]> = L['length']\n"
+           ]
+
 translate :: [Function] -> Text
 translate fns =
-  T.concat $ map translateFunction fns
+  T.concat $ [tstsStdLib] ++ map translateFunction fns
 
 parse :: Text -> IO ()
 parse input =
