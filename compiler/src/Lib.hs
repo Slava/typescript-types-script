@@ -135,7 +135,16 @@ translateTerm (Expression call args) =
 translateFuncBody :: [Branch] -> Text
 translateFuncBody [] = ""
 translateFuncBody ((Branch Nothing t):[]) = translateTerm t
-translateFuncBody bs = ""
+translateFuncBody bs = T.concat ["{\n", (translateFuncCases bs 0), "}", "[", (translateFuncCond bs 0), "]"]
+
+translateFuncCases :: [Branch] -> Int -> Text
+translateFuncCases [] _ = ""
+translateFuncCases ((Branch _ t):bs) idx = T.concat ["  '", T.pack (show idx), "': ", (translateTerm t), ",\n", translateFuncCases bs (idx + 1)]
+
+translateFuncCond :: [Branch] -> Int -> Text
+translateFuncCond [] _ = ""
+translateFuncCond ((Branch (Just cond) _):bs) idx = T.concat [translateTerm cond, " extends true ? ", "'", T.pack (show idx), "'", " : ", translateFuncCond bs (idx + 1)]
+translateFuncCond ((Branch Nothing _):_) idx = T.concat ["'", T.pack (show idx), "'"]
 
 translateFunction :: Function -> Text
 translateFunction fn =
